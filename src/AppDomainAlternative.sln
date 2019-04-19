@@ -1,21 +1,27 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.28307.421
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppDomainAlternative", "AppDomainAlternative\AppDomainAlternative.csproj", "{D36E0CAF-B64E-4FA7-B436-685571466D1A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppDomainAlternative.Tests", "AppDomainAlternative.Tests\AppDomainAlternative.Tests.csproj", "{A5C31E9A-F6A4-409E-8877-DCE73F6B1CBE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppDomainAlternative.Tests", "AppDomainAlternative.Tests\AppDomainAlternative.Tests.csproj", "{A5C31E9A-F6A4-409E-8877-DCE73F6B1CBE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{9412893C-A6DA-4C52-851C-DB2B0D5CCE6B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostApp", "HostApp\HostApp.csproj", "{B8A0CA83-1998-4616-99EF-C8B1C9C57A90}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostApp", "HostApp\HostApp.csproj", "{B8A0CA83-1998-4616-99EF-C8B1C9C57A90}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E9DE4A6F-6FDE-4A03-9DB8-A684FEF5A88C} = {E9DE4A6F-6FDE-4A03-9DB8-A684FEF5A88C}
+	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientApp", "ClientApp\ClientApp.csproj", "{E9DE4A6F-6FDE-4A03-9DB8-A684FEF5A88C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClientApp", "ClientApp\ClientApp.csproj", "{E9DE4A6F-6FDE-4A03-9DB8-A684FEF5A88C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{92D74724-9524-46CB-94CF-CDEA3371A62E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Common\Common.csproj", "{92D74724-9524-46CB-94CF-CDEA3371A62E}"
 EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -52,5 +58,8 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EB1975AE-2208-466B-A0DB-2045BA764E63}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal
