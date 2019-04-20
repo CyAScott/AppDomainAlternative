@@ -23,10 +23,13 @@ namespace AppDomainAlternative.Ipc
         void Write(long channelId, Stream stream);
     }
 
-    internal class Connection : IConnection
+    internal class Connection : IConnection, IHaveChannels, IObservable<(Domains domain, IChannel channel)>
     {
+        IDisposable IObservable<(Domains domain, IChannel channel)>.Subscribe(IObserver<(Domains domain, IChannel channel)> observer) => new ObservableListener(this, observer);
+        IEnumerator<IChannel> IEnumerable<IChannel>.GetEnumerator() => channels.Values.Where(channel => channel.Instance != null).GetEnumerator();
         IEnumerator<IInternalChannel> IEnumerable<IInternalChannel>.GetEnumerator() => channels.Values.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => channels.Values.GetEnumerator();
+        IObservable<(Domains domain, IChannel channel)> IHaveChannels.AsObservable => this;
         bool IResolveProxyIds.TryToGetInstance(long id, out object instance)
         {
             if (!channels.TryGetValue(id, out var channel) ||
@@ -78,6 +81,64 @@ namespace AppDomainAlternative.Ipc
             : this (domain is CurrentDomain, serializer, proxyGenerator, reader, writer)
         {
             this.domain = domain;
+        }
+
+        internal class ObservableListener : IDisposable
+        {
+            private int disposed;
+            private readonly Connection connection;
+            private readonly IObserver<(Domains domain, IChannel channel)> observer;
+            private readonly List<IChannel> observedChannels;
+
+            public ObservableListener(Connection connection, IObserver<(Domains domain, IChannel channel)> observer)
+            {
+                this.connection = connection;
+                this.observer = observer ?? throw new ArgumentNullException(nameof(observer));
+
+                observedChannels = new List<IChannel>(connection);
+                connection.NewChannel += OnNewChannel;
+
+                foreach (var channel in observedChannels)
+                {
+                    observer.OnNext((connection.domain, channel));
+                }
+
+                observedChannels = null;
+            }
+            public void Dispose()
+            {
+                if (Interlocked.CompareExchange(ref disposed, 1, 0) == 1)
+                {
+                    return;
+                }
+
+                connection.NewChannel -= OnNewChannel;
+
+                try
+                {
+                    observer.OnCompleted();
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+            public void OnNewChannel(Domains domain, IChannel channel)
+            {
+                if (observedChannels?.Contains(channel) ?? false)
+                {
+                    return;
+                }
+
+                try
+                {
+                    observer.OnNext((domain, channel));
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
         }
 
         protected Connection(
@@ -292,6 +353,57 @@ namespace AppDomainAlternative.Ipc
         }
 
         public IAmASerializer Serializer { get; }
+        public async Task<(bool IsHost, T Instance)> GetInstanceOf<T>(FetchInstanceBy fetch = FetchInstanceBy.Any, Func<bool, T, bool> filter = null,
+            CancellationToken cancel = default(CancellationToken))
+            where T : class
+        {
+            var existingInstance = (fetch & FetchInstanceBy.Existing) == FetchInstanceBy.Existing ? channels.Values
+                .Where(channel => channel.Instance != null)
+                .Select(channel => new
+                {
+                    channel.IsHost,
+                    Instance = channel.Instance as T
+                })
+                .FirstOrDefault(channel =>
+                    channel.Instance != null &&
+                    (filter?.Invoke(channel.IsHost, channel.Instance) ?? true)) : null;
+
+            if (existingInstance != null)
+            {
+                return (existingInstance.IsHost, existingInstance.Instance);
+            }
+
+            if ((fetch & FetchInstanceBy.Next) != FetchInstanceBy.Next)
+            {
+                return (false, null);
+            }
+
+            var task = new TaskCompletionSource<(bool IsHost, T Instance)>();
+
+            cancel.Register(() => task.TrySetCanceled());
+
+            var listener = new Action<Domains, IChannel>((_, channel) =>
+            {
+                if (channel.Instance is T newInstance &&
+                    (filter?.Invoke(channel.IsHost, newInstance) ?? true))
+                {
+                    task.TrySetResult((channel.IsHost, newInstance));
+                }
+            });
+
+            NewChannel += listener;
+
+            try
+            {
+                await task.Task.ConfigureAwait(false);
+
+                return task.Task.Result;
+            }
+            finally
+            {
+                NewChannel -= listener;
+            }
+        }
         public async Task<object> CreateInstance(ConstructorInfo ctor, bool hostInstance, params object[] arguments)
         {
             var channel = createChannel();
@@ -350,5 +462,63 @@ namespace AppDomainAlternative.Ipc
             pendingWrites.Enqueue((channelId, stream));
             newRequests.Set();
         }
+    }
+
+    /// <summary>
+    /// A collection of <inheritdoc cref="IChannel"/>s use for remoting between <see cref="Domains"/>.
+    /// </summary>
+    public interface IHaveChannels : IEnumerable<IChannel>
+    {
+        /// <summary>
+        /// An <see cref="IObservable{T}"/> stream of existing and new <see cref="IChannel"/>.
+        /// </summary>
+        IObservable<(Domains domain, IChannel channel)> AsObservable { get; }
+
+        /// <summary>
+        /// Gets the next instance of a shared instance.
+        /// </summary>
+        /// <param name="fetch">How the instance should be fetched.</param>
+        /// <param name="filter">A filter for fetching the instance.</param>
+        /// <param name="cancel">A <see cref="CancellationToken"/> to cancel the await.</param>
+        Task<(bool IsHost, T Instance)> GetInstanceOf<T>(
+            FetchInstanceBy fetch = FetchInstanceBy.Any,
+            Func<bool, T, bool> filter = null,
+            CancellationToken cancel = default(CancellationToken))
+            where T : class;
+
+        /// <summary>
+        /// Creates a proxy instance from a ctor for a class.
+        /// </summary>
+        /// <param name="baseCtor">The constructor for the class to generate a proxy for.</param>
+        /// <param name="hostInstance">If true, the object instance should exist within this process and all method calls from the child/parent process are proxied to this process.</param>
+        /// <param name="arguments">The constructor arguments.</param>
+        Task<object> CreateInstance(ConstructorInfo baseCtor, bool hostInstance, params object[] arguments);
+
+        /// <summary>
+        /// Is invoked when a new <see cref="IChannel"/> is opened.
+        /// </summary>
+        event Action<Domains, IChannel> NewChannel;
+    }
+
+    /// <summary>
+    /// When getting a shared instance between <see cref="Domains"/> how the get should fetch the instance.
+    /// </summary>
+    [Flags]
+    public enum FetchInstanceBy
+    {
+        /// <summary>
+        /// <see cref="Existing"/> or <see cref="Next"/>
+        /// </summary>
+        Any = Existing | Next,
+
+        /// <summary>
+        /// Only gets an instance if it was already created.
+        /// </summary>
+        Existing = 1,
+
+        /// <summary>
+        /// Only gets the next created instance.
+        /// </summary>
+        Next = 2
     }
 }

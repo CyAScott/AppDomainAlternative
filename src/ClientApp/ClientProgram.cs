@@ -11,7 +11,7 @@ namespace ClientApp
         {
             const bool host = false;
 
-            var chatRoomInstanceInfo = await Domains.Current.GetInstanceOf<ChatRoom>(filter: (isHost, instance) => isHost == host).ConfigureAwait(false);
+            var chatRoomInstanceInfo = await Domains.Current.Channels.GetInstanceOf<ChatRoom>(filter: (isHost, instance) => isHost == host).ConfigureAwait(false);
 
             await chatRoomInstanceInfo.Instance.SendMessage(host, "Hello server.").ConfigureAwait(false);
 

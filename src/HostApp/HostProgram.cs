@@ -23,7 +23,7 @@ namespace HostApp
 
             //create a shared instance between these processes
             //the instance will be hosted on this process and the client will proxy it calls to the instance to this process
-            var chatRoom = (ChatRoom)await childDomain.CreateInstance(typeof(ChatRoom).GetConstructors().First(), host, "Interprocess Communication Chat").ConfigureAwait(false);
+            var chatRoom = (ChatRoom)await childDomain.Channels.CreateInstance(typeof(ChatRoom).GetConstructors().First(), host, "Interprocess Communication Chat").ConfigureAwait(false);
 
             await chatRoom.SendMessage(host, "Client are you there?").ConfigureAwait(false);
 
