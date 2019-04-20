@@ -44,7 +44,7 @@ Creating a child AppDomain is similar to starting a child process with AppDomain
 
 ```
 var domain = AppDomain.CreateDomain("Some Name");
-var chatRoom = (ChatRoom)domain.Channels.CreateInstanceAndUnwrap(typeof(ChatRoom).Assembly.FullName, typeof(ChatRoom).FullName);
+var chatRoom = (ChatRoom)domain.CreateInstanceAndUnwrap(typeof(ChatRoom).Assembly.FullName, typeof(ChatRoom).FullName);
 chatRoom.SendMessage("Hello World");
 ```
 
