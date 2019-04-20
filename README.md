@@ -44,7 +44,7 @@ Creating a child AppDomain is similar to starting a child process with AppDomain
 
 ```
 var domain = AppDomain.CreateDomain("Some Name");
-var chatRoom = (ChatRoom)domain.CreateInstanceAndUnwrap(typeof(ChatRoom).Assembly.FullName, typeof(ChatRoom).FullName);
+var chatRoom = (ChatRoom)domain.Channels.CreateInstanceAndUnwrap(typeof(ChatRoom).Assembly.FullName, typeof(ChatRoom).FullName);
 chatRoom.SendMessage("Hello World");
 ```
 
@@ -52,7 +52,7 @@ That example creates an instance on the child domain and returns a proxied insta
 
 ```
 var domain = Domains.Current.AddChildDomain(new ProcessStartInfo("dotnet", "path to .Net Core assembly"));
-var chatRoom = (ChatRoom)await childDomain.CreateInstance(typeof(ChatRoom).GetConstructors().First(), hostInstance: false).ConfigureAwait(false);
+var chatRoom = (ChatRoom)await childDomain.Channels.CreateInstance(typeof(ChatRoom).GetConstructors().First(), hostInstance: false).ConfigureAwait(false);
 chatRoom.SendMessage("Hello World");
 ```
 
