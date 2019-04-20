@@ -26,7 +26,6 @@ namespace AppDomainAlternative
         private readonly ConcurrentDictionary<int, ChildDomain> children = new ConcurrentDictionary<int, ChildDomain>();
 
         internal CurrentDomain(Process current)
-            : base(current.Id)
         {
             Process = current;
 
@@ -58,7 +57,7 @@ namespace AppDomainAlternative
         }
 
         /// <summary>
-        /// Gets a child domain by <see cref="Domains.Id"/>.
+        /// Gets a child domain by <see cref="System.Diagnostics.Process.Id"/>.
         /// </summary>
         public Domains this[int id] => children[id];
 
@@ -123,7 +122,7 @@ namespace AppDomainAlternative
         public bool IsConnectedToParent => Connection != null;
 
         /// <summary>
-        /// Attempts to get a child domain by <see cref="Domains.Id"/>.
+        /// Attempts to get a child domain by <see cref="System.Diagnostics.Process.Id"/>.
         /// </summary>
         public bool TryToGetChild(int id, out ChildDomain child) => children.TryGetValue(id, out child);
 

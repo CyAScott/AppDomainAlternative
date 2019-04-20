@@ -12,7 +12,6 @@ namespace AppDomainAlternative
         private Connection Connection { get; }
 
         internal ChildDomain(Process childProcess, Connection connection)
-            : base(childProcess.Id)
         {
             childProcess.Exited += InvokeExited;
             Process = childProcess;

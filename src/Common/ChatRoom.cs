@@ -11,7 +11,7 @@ namespace Common
             Name = name;
 
             Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"Chat room \"{name}\" started for pid {Domains.Current.Id}.");
+            Console.WriteLine($"Chat room \"{name}\" started for pid {Domains.Current.Process.Id}.");
         }
 
         public string Name { get; }

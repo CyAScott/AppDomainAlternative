@@ -13,7 +13,9 @@ namespace AppDomainAlternative
     /// </summary>
     public abstract class Domains
     {
-        internal Domains(int id) => Id = id;
+        internal Domains()
+        {
+        }
 
         /// <summary>
         /// All the open <see cref="IChannel"/>s between the parent and child <see cref="Domains"/>.
@@ -24,11 +26,6 @@ namespace AppDomainAlternative
         /// The process for the domain.
         /// </summary>
         public abstract Process Process { get; }
-
-        /// <summary>
-        /// The domain id (aka process id).
-        /// </summary>
-        public int Id { get; }
 
         /// <summary>
         /// The current domain (aka Process).
