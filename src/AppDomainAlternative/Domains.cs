@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using AppDomainAlternative.Ipc;
 
@@ -52,9 +53,11 @@ namespace AppDomainAlternative
         /// </summary>
         /// <param name="fetch">How the instance should be fetched.</param>
         /// <param name="filter">A filter for fetching the instance.</param>
+        /// <param name="cancel">A <see cref="CancellationToken"/> to cancel the await.</param>
         public async Task<(bool IsHost, T Instance)> GetInstanceOf<T>(
             FetchInstanceBy fetch = FetchInstanceBy.Any,
-            Func<bool, T, bool> filter = null)
+            Func<bool, T, bool> filter = null,
+            CancellationToken cancel = default(CancellationToken))
             where T : class
         {
             var existingInstance = (fetch & FetchInstanceBy.Existing) == FetchInstanceBy.Existing ? Channels
@@ -78,6 +81,8 @@ namespace AppDomainAlternative
             }
 
             var task = new TaskCompletionSource<(bool IsHost, T Instance)>();
+
+            cancel.Register(() => task.TrySetCanceled());
 
             var listener = new Action<Domains, IChannel>((_, channel) =>
             {
