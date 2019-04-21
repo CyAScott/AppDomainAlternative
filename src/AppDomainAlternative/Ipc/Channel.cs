@@ -25,6 +25,11 @@ namespace AppDomainAlternative.Ipc
         bool IsHost { get; }
 
         /// <summary>
+        /// The id for the channel.
+        /// </summary>
+        long Id { get; }
+
+        /// <summary>
         /// The shared instance between domains.
         /// </summary>
         object Instance { get; }
@@ -38,7 +43,6 @@ namespace AppDomainAlternative.Ipc
         Task LocalStart(IGenerateProxies proxyGenerator, ConstructorInfo ctor, bool hostInstance, params object[] arguments);
         Task RemoteStart(IGenerateProxies proxyGenerator);
         bool IsDisposed { get; }
-        long Id { get; }
     }
 
     internal sealed class Channel : IInternalChannel

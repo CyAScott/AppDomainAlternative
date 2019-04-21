@@ -485,7 +485,7 @@ namespace AppDomainAlternative.Ipc
     /// <summary>
     /// A collection of <inheritdoc cref="IChannel"/>s use for remoting between <see cref="Domains"/>.
     /// </summary>
-    public interface IHaveChannels : IEnumerable<IChannel>
+    public interface IHaveChannels : IEnumerable<IChannel>, IResolveProxyIds
     {
         /// <summary>
         /// An <see cref="IObservable{T}"/> stream of existing and new <see cref="IChannel"/>.
