@@ -17,7 +17,7 @@ namespace AppDomainAlternative.Ipc
     /// <summary>
     /// An IPC channel for sharing an instance across domains.
     /// </summary>
-    public interface IChannel
+    public interface IChannel : IDisposable
     {
         /// <summary>
         /// If the instance is hosted from this domain.
@@ -35,7 +35,7 @@ namespace AppDomainAlternative.Ipc
         object Instance { get; }
     }
 
-    internal interface IInternalChannel : IChannel, IDisposable, IInterceptor
+    internal interface IInternalChannel : IChannel, IInterceptor
     {
         BinaryReader Reader { get; }
         IConnection Connection { get; }
