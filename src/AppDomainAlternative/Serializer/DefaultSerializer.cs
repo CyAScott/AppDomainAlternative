@@ -287,8 +287,7 @@ namespace AppDomainAlternative.Serializer
             type.IsEnum ||
             type.IsPrimitive ||
             type == typeof(string) ||
-            type.IsSerializable ||
-            Attribute.IsDefined(type, typeof(PassByProxyAttribute));
+            type.IsSerializable;
 
         public static IAmASerializer Resolve(string name) => Instance;
 
