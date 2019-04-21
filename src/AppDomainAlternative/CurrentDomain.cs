@@ -16,12 +16,10 @@ namespace AppDomainAlternative
     /// <summary>
     /// The current domain (aka Process).
     /// </summary>
-    public sealed class CurrentDomain : Domains, IDomains, IEnumerable<ChildDomain>
+    public sealed class CurrentDomain : Domains, IEnumerable<ChildDomain>
     {
-        Connection IDomains.Connection => Connection;
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        private Connection Connection { get; }
         private const string connectionStringVarName = "__ParentProcessConnectionString__";
         private readonly ConcurrentDictionary<int, ChildDomain> children = new ConcurrentDictionary<int, ChildDomain>();
 
@@ -46,7 +44,7 @@ namespace AppDomainAlternative
             var serializerName = HttpUtility.HtmlDecode(parentConnectionString.Groups["serializer"].Value);
             var proxyGeneratorName = HttpUtility.HtmlDecode(parentConnectionString.Groups["proxyGenerator"].Value);
 
-            Connection = new Connection(this,
+            Channels = new Connection(this,
                 DomainConfiguration.SerializerResolver(serializerName) ?? throw new InvalidOperationException($"Invalid serializer from parent: {serializerName}"),
                 DomainConfiguration.Resolver(proxyGeneratorName) ?? throw new InvalidOperationException($"Invalid proxy generator from parent: {proxyGeneratorName}"),
                 new AnonymousPipeClientStream(PipeDirection.In, parentConnectionString.Groups["read"].Value),
@@ -125,6 +123,9 @@ namespace AppDomainAlternative
         /// The number of live child domains created by this domain.
         /// </summary>
         public int Count => children.Count;
+
+        /// <inheritdoc />
+        public override IHaveChannels Channels { get; }
 
         /// <summary>
         /// The current process.

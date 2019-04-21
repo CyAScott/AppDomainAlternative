@@ -6,18 +6,20 @@ using AppDomainAlternative.Ipc;
 namespace AppDomainAlternative
 {
     /// <inheritdoc cref="Domains"/>
-    public sealed class ChildDomain : Domains, IDisposable, IDomains
+    public sealed class ChildDomain : Domains, IDisposable
     {
-        Connection IDomains.Connection => Connection;
-        private Connection Connection { get; }
         private int disposed;
 
         internal ChildDomain(Process childProcess, Connection connection)
         {
-            childProcess.Exited += (sender, eventArgs) => Dispose();
+            Channels = connection;
             Process = childProcess;
-            Connection = connection;
+
+            childProcess.Exited += (sender, eventArgs) => Dispose();
         }
+
+        /// <inheritdoc />
+        public override IHaveChannels Channels { get; }
 
         /// <summary>
         /// The process for the child.
@@ -32,7 +34,7 @@ namespace AppDomainAlternative
                 return;
             }
 
-            using (Connection)
+            using ((IDisposable)Channels)
             using (Process)
             {
                 try

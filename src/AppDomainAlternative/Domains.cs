@@ -3,11 +3,6 @@ using AppDomainAlternative.Ipc;
 
 namespace AppDomainAlternative
 {
-    internal interface IDomains
-    {
-        Connection Connection { get; }
-    }
-
     /// <summary>
     /// A wrapper for a <see cref="Process"/>.
     /// </summary>
@@ -20,7 +15,7 @@ namespace AppDomainAlternative
         /// <summary>
         /// All the open <see cref="IChannel"/>s between the parent and child <see cref="Domains"/>.
         /// </summary>
-        public IHaveChannels Channels => ((IDomains)this).Connection;
+        public abstract IHaveChannels Channels { get; }
 
         /// <summary>
         /// The process for the domain.
