@@ -87,6 +87,7 @@ namespace AppDomainAlternative.Ipc
         {
             private int disposed;
             private readonly Connection connection;
+            private readonly Guid id = Guid.NewGuid();
             private readonly IObserver<(Domains domain, IChannel channel)> observer;
             private readonly List<IChannel> observedChannels;
 
@@ -95,12 +96,21 @@ namespace AppDomainAlternative.Ipc
                 this.connection = connection;
                 this.observer = observer ?? throw new ArgumentNullException(nameof(observer));
 
+                connection.listeners[id] = this;
+
                 observedChannels = new List<IChannel>(connection);
                 connection.NewChannel += OnNewChannel;
 
                 foreach (var channel in observedChannels)
                 {
-                    observer.OnNext((connection.domain, channel));
+                    try
+                    {
+                        observer.OnNext((connection.domain, channel));
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
                 }
 
                 observedChannels = null;
@@ -111,6 +121,8 @@ namespace AppDomainAlternative.Ipc
                 {
                     return;
                 }
+
+                connection.listeners.TryRemove(id, out _);
 
                 connection.NewChannel -= OnNewChannel;
 
@@ -337,6 +349,7 @@ namespace AppDomainAlternative.Ipc
         private int disposed, channelCounter;
         private readonly BinaryWriter writer;
         private readonly CancellationTokenSource disposeToken = new CancellationTokenSource();
+        private readonly ConcurrentDictionary<Guid, ObservableListener> listeners = new ConcurrentDictionary<Guid, ObservableListener>();
         private readonly ConcurrentDictionary<long, IInternalChannel> channels = new ConcurrentDictionary<long, IInternalChannel>();
         private readonly ConcurrentQueue<(long id, Stream data)> pendingWrites = new ConcurrentQueue<(long id, Stream data)>();
         private readonly Domains domain;
@@ -445,6 +458,11 @@ namespace AppDomainAlternative.Ipc
             writer?.Dispose();
 
             (domain as IDisposable)?.Dispose();
+
+            foreach (var listener in listeners.Values)
+            {
+                listener.Dispose();
+            }
         }
         public void Terminate(IInternalChannel channel)
         {

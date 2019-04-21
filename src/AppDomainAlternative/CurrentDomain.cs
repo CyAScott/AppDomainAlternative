@@ -103,9 +103,9 @@ namespace AppDomainAlternative
 
             children[childProcess.Id] = child;
 
-            child.Exited += (sender, eventArgs) => children.TryRemove(Process.Id, out _);
+            child.Process.Exited += (sender, eventArgs) => children.TryRemove(Process.Id, out _);
 
-            if (child.HasExited)
+            if (child.Process.HasExited)
             {
                 children.TryRemove(Process.Id, out _);
             }
@@ -115,11 +115,6 @@ namespace AppDomainAlternative
 
         /// <inheritdoc />
         public IEnumerator<ChildDomain> GetEnumerator() => children.Values.GetEnumerator();
-
-        /// <summary>
-        /// If the current domain is connected to a parent domain.
-        /// </summary>
-        public bool IsConnectedToParent => Connection != null;
 
         /// <summary>
         /// Attempts to get a child domain by <see cref="System.Diagnostics.Process.Id"/>.

@@ -10,31 +10,14 @@ namespace AppDomainAlternative
     {
         Connection IDomains.Connection => Connection;
         private Connection Connection { get; }
+        private int disposed;
 
         internal ChildDomain(Process childProcess, Connection connection)
         {
-            childProcess.Exited += InvokeExited;
+            childProcess.Exited += (sender, eventArgs) => Dispose();
             Process = childProcess;
             Connection = connection;
         }
-        internal void InvokeExited(object sender, EventArgs args)
-        {
-            HasExited = true;
-            Exited?.Invoke(this, args);
-            Dispose();
-        }
-
-        private int disposed;
-
-        /// <summary>
-        /// Indicates if the domain has ended.
-        /// </summary>
-        public bool HasExited { get; private set; }
-
-        /// <summary>
-        /// A event handler invoked when the child domain terminates.
-        /// </summary>
-        public event Action<object, EventArgs> Exited;
 
         /// <summary>
         /// The process for the child.
@@ -49,18 +32,18 @@ namespace AppDomainAlternative
                 return;
             }
 
-            Connection.Dispose();
-
-            try
+            using (Connection)
+            using (Process)
             {
-                Process.Kill();
+                try
+                {
+                    Process.Kill();
+                }
+                catch
+                {
+                    // ignored
+                }
             }
-            catch
-            {
-                // ignored
-            }
-
-            Process.Dispose();
         }
     }
 }
