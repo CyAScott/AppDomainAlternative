@@ -1,6 +1,7 @@
 ﻿using System;
 using AppDomainAlternative.Proxy;
 using AppDomainAlternative.Serializer;
+using AppDomainAlternative.Serializer.Default;
 
 namespace AppDomainAlternative
 {

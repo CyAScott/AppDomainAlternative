@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AppDomainAlternative.Proxy;
 using AppDomainAlternative.Serializer;
+using AppDomainAlternative.Serializer.Default;
 using NUnit.Framework;
 
 // ReSharper disable AccessToDisposedClosure
@@ -26,7 +27,7 @@ namespace AppDomainAlternative.Ipc
                 Buffer = new ReadWriteBuffer(id);
 
                 Connection = connection;
-                Reader = new BinaryReader(Buffer, Encoding.Unicode);
+                Reader = new BinaryReader(Buffer, Encoding.UTF8);
                 Id = id;
                 Serializer = serializer;
             }

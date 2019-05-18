@@ -110,7 +110,7 @@ namespace AppDomainAlternative.Extensions
 
             var responseStream = new MemoryStream();
 
-            using (var writer = new BinaryWriter(responseStream, Encoding.Unicode, true))
+            using (var writer = new BinaryWriter(responseStream, Encoding.UTF8, true))
             {
                 try
                 {
@@ -180,7 +180,7 @@ namespace AppDomainAlternative.Extensions
             var requestId = generateRequestId();
             await requestStream.WriteAsync(BitConverter.GetBytes(requestId), 0, 4).ConfigureAwait(false);
 
-            using (var writer = new BinaryWriter(requestStream, Encoding.Unicode, true))
+            using (var writer = new BinaryWriter(requestStream, Encoding.UTF8, true))
             {
                 //methodName
                 await channel.Serializer.Serialize(writer, typeof(string), methodName, channel.Connection).ConfigureAwait(false);
@@ -276,7 +276,7 @@ namespace AppDomainAlternative.Extensions
                         {
                             var responseStream = new MemoryStream();
 
-                            using (var writer = new BinaryWriter(responseStream, Encoding.Unicode, true))
+                            using (var writer = new BinaryWriter(responseStream, Encoding.UTF8, true))
                             {
                                 writer.Write(requestId);
                                 writer.Write(false);
@@ -308,7 +308,7 @@ namespace AppDomainAlternative.Extensions
                         {
                             var responseStream = new MemoryStream();
 
-                            using (var writer = new BinaryWriter(responseStream, Encoding.Unicode, true))
+                            using (var writer = new BinaryWriter(responseStream, Encoding.UTF8, true))
                             {
                                 writer.Write(requestId);
                                 writer.Write(false);

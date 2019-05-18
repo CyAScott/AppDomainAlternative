@@ -33,7 +33,7 @@ namespace AppDomainAlternative.Extensions
             object instance;
             var responseStream = new MemoryStream();
 
-            using (var writer = new BinaryWriter(responseStream, Encoding.Unicode, true))
+            using (var writer = new BinaryWriter(responseStream, Encoding.UTF8, true))
             {
                 try
                 {
@@ -140,7 +140,7 @@ namespace AppDomainAlternative.Extensions
             var responseTask = channel.Buffer.ReadAsync(response, 0, 1);
 
             var initRequest = new MemoryStream();
-            using (var writer = new BinaryWriter(initRequest, Encoding.Unicode, true))
+            using (var writer = new BinaryWriter(initRequest, Encoding.UTF8, true))
             {
                 //write hostInstance
                 writer.Write(hostInstance);

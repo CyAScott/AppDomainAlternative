@@ -10,6 +10,7 @@ using System.Web;
 using AppDomainAlternative.Ipc;
 using AppDomainAlternative.Proxy;
 using AppDomainAlternative.Serializer;
+using AppDomainAlternative.Serializer.Default;
 
 namespace AppDomainAlternative
 {

@@ -6,6 +6,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using AppDomainAlternative.Serializer.Default;
 using NUnit.Framework;
 
 #pragma warning disable 659
@@ -13,7 +14,7 @@ using NUnit.Framework;
 namespace AppDomainAlternative.Serializer
 {
     [TestFixture]
-    public class SerializerTests
+    public class SerializableTests
     {
         [Serializable]
         public class SampleClass : ISerializable
@@ -23,22 +24,26 @@ namespace AppDomainAlternative.Serializer
             {
                 CreatedByDefaultCtor = false;
                 Number = info.GetInt32(nameof(Number));
+                Parent = (SerializableTests)info.GetValue(nameof(Parent), typeof(SerializableTests));
                 Str = info.GetString(nameof(Str));
             }
 
             public readonly bool CreatedByDefaultCtor;
 
+            public SerializableTests Parent { get; set; }
             public int Number { get; set; }
             public string Str { get; set; }
 
             public override bool Equals(object obj) =>
                 obj is SampleClass value &&
                 Number == value.Number &&
-                Str == value.Str;
+                Str == value.Str &&
+                ReferenceEquals(Parent, value.Parent);
 
             public void GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 info.AddValue(nameof(Number), Number);
+                info.AddValue(nameof(Parent), Parent);
                 info.AddValue(nameof(Str), Str);
             }
         }
@@ -47,14 +52,14 @@ namespace AppDomainAlternative.Serializer
         {
             var stream = new MemoryStream();
 
-            using (var writer = new BinaryWriter(stream, Encoding.Unicode, true))
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8, true))
             {
                 await serializer.Serialize(writer, typeof(SampleClass), value, resolver).ConfigureAwait(false);
             }
 
             stream.Position = 0;
 
-            using (var reader = new BinaryReader(stream, Encoding.Unicode, true))
+            using (var reader = new BinaryReader(stream, Encoding.UTF8, true))
             {
                 var deserializedValue = (SampleClass)await serializer.Deserialize(reader, typeof(SampleClass), resolver, CancellationToken.None).ConfigureAwait(false);
                 Assert.AreEqual(deserializedValue, value);
@@ -68,19 +73,24 @@ namespace AppDomainAlternative.Serializer
             var resolver = new MockResolveProxyIds();
             var serializer = new DefaultSerializer();
 
+            resolver.Instances[3] = this;
+
             await test(serializer, resolver, new SampleClass
             {
                 Number = 0,
+                Parent = this,
                 Str = null
             }).ConfigureAwait(false);
             await test(serializer, resolver, new SampleClass
             {
                 Number = int.MinValue,
+                Parent = this,
                 Str = ""
             }).ConfigureAwait(false);
             await test(serializer, resolver, new SampleClass
             {
                 Number = int.MaxValue,
+                Parent = this,
                 Str = "Hello World"
             }).ConfigureAwait(false);
         }
@@ -100,14 +110,16 @@ namespace AppDomainAlternative.Serializer
                 int.MaxValue
             };
 
-            using (var writer = new BinaryWriter(stream, Encoding.Unicode, true))
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8, true))
             {
                 await serializer.Serialize(writer, typeof(List<int>), value, resolver).ConfigureAwait(false);
             }
 
+            Console.WriteLine($"Size of {value}: {stream.Length}");
+
             stream.Position = 0;
 
-            using (var reader = new BinaryReader(stream, Encoding.Unicode, true))
+            using (var reader = new BinaryReader(stream, Encoding.UTF8, true))
             {
                 var deserializedValue = (List<int>)await serializer.Deserialize(reader, typeof(List<int>), resolver, CancellationToken.None).ConfigureAwait(false);
                 Assert.AreEqual(deserializedValue.Count, value.Count);

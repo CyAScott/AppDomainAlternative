@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using AppDomainAlternative.Serializer.Default;
 using NUnit.Framework;
 
 namespace AppDomainAlternative.Serializer
@@ -18,14 +19,16 @@ namespace AppDomainAlternative.Serializer
             {
                 var stream = new MemoryStream();
 
-                using (var writer = new BinaryWriter(stream, Encoding.Unicode, true))
+                using (var writer = new BinaryWriter(stream, Encoding.UTF8, true))
                 {
                     await serializer.Serialize(writer, typeof(T), value, resolver).ConfigureAwait(false);
                 }
 
+                Console.WriteLine($"Size of {value}: {stream.Length}");
+
                 stream.Position = 0;
 
-                using (var reader = new BinaryReader(stream, Encoding.Unicode, true))
+                using (var reader = new BinaryReader(stream, Encoding.UTF8, true))
                 {
                     var deserializedValue = await serializer.Deserialize(reader, typeof(T), resolver, CancellationToken.None).ConfigureAwait(false);
                     Assert.AreEqual(value, deserializedValue);
@@ -61,10 +64,6 @@ namespace AppDomainAlternative.Serializer
             await test(serializer, resolver, decimal.MinValue, -1, 0, 1, decimal.MaxValue).ConfigureAwait(false);
             await test(serializer, resolver, double.MinValue, -1, 0, 1, double.MaxValue).ConfigureAwait(false);
             await test(serializer, resolver, float.MinValue, -1, 0, 1, float.MaxValue).ConfigureAwait(false);
-
-            //time
-            await test(serializer, resolver, DateTime.MinValue, DateTime.Today, DateTime.Now, DateTime.UtcNow, DateTime.MaxValue).ConfigureAwait(false);
-            await test(serializer, resolver, TimeSpan.MinValue, TimeSpan.Zero, TimeSpan.MaxValue).ConfigureAwait(false);
         }
     }
 }

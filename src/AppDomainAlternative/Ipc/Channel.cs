@@ -63,7 +63,7 @@ namespace AppDomainAlternative.Ipc
             Buffer = new ReadWriteBuffer(id);
 
             Connection = connection;
-            Reader = new BinaryReader(Buffer, Encoding.Unicode);
+            Reader = new BinaryReader(Buffer, Encoding.UTF8);
             Id = id;
             IdBytes = BitConverter.GetBytes(id);
             Serializer = serializer;

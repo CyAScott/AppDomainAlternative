@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using AppDomainAlternative.Extensions;
 using AppDomainAlternative.Proxy;
 using AppDomainAlternative.Serializer;
+using AppDomainAlternative.Serializer.Default;
 
 namespace AppDomainAlternative.Ipc.Channels
 {
@@ -19,7 +20,7 @@ namespace AppDomainAlternative.Ipc.Channels
         {
             MockConnection = connection ?? new MockConnection();
             Buffer = new ReadWriteBuffer(Id = 7);
-            Reader = new BinaryReader(Buffer, Encoding.Unicode);
+            Reader = new BinaryReader(Buffer, Encoding.UTF8);
         }
 
         public BinaryReader Reader { get; }
