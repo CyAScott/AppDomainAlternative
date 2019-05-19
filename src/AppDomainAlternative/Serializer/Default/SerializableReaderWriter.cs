@@ -11,23 +11,18 @@ namespace AppDomainAlternative.Serializer.Default
 {
     internal static class SerializableReaderWriter
     {
-        private static ConstructorInfo getCtor(this Type type)
-        {
-            if (!serializableConstructors.TryGetValue(type, out var ctor))
-            {
-                ctor = type.GetConstructor(new[]
+        private static ConstructorInfo getCtor(this Type type) =>
+            serializableConstructors.GetOrAdd(type, @class => @class
+                .GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
+                .Select(it => new
                 {
-                    typeof(SerializationInfo),
-                    typeof(StreamingContext)
-                });
-                if (ctor != null)
-                {
-                    serializableConstructors[type] = ctor;
-                }
-            }
-
-            return ctor;
-        }
+                    ctor = it,
+                    @params = it.GetParameters()
+                })
+                .FirstOrDefault(it => it.@params.Length == 2 &&
+                                      it.@params[0].ParameterType == typeof(SerializationInfo) &&
+                                      it.@params[1].ParameterType == typeof(StreamingContext))
+                ?.ctor ?? throw new InvalidOperationException("Unable to find serialization constructor."));
         private static FieldInfo[] getFields(this Type type)
         {
             if (!serializableFields.TryGetValue(type, out var members))
@@ -57,7 +52,7 @@ namespace AppDomainAlternative.Serializer.Default
 
             if (useCustomSerializer)
             {
-                var context = new StreamingContext();
+                var context = new StreamingContext(StreamingContextStates.All, resolver);
                 var info = new SerializationInfo(type, new DefaultFormatterConverter());
                 var length = reader.ReadInt32();
 
@@ -70,7 +65,7 @@ namespace AppDomainAlternative.Serializer.Default
                     info.AddValue(itemName, item, itemType);
                 }
 
-                var ctor = type.getCtor() ?? throw new InvalidOperationException("Unable to find serialization constructor.");
+                var ctor = type.getCtor();
 
                 return ctor.Invoke(new object[]
                 {
@@ -100,12 +95,9 @@ namespace AppDomainAlternative.Serializer.Default
                 //true for custom serialization
                 writer.Write(true);
 
-                if (type.getCtor() == null)
-                {
-                    throw new InvalidOperationException("Unable to find serialization constructor.");
-                }
+                type.getCtor();
 
-                var context = new StreamingContext();
+                var context = new StreamingContext(StreamingContextStates.All, resolver);
                 var info = new SerializationInfo(type, new DefaultFormatterConverter());
                 serializable.GetObjectData(info, context);
 
