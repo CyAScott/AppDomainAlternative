@@ -57,6 +57,8 @@ namespace AppDomainAlternative.Serializer
                 await serializer.Serialize(writer, typeof(SampleClass), value, resolver).ConfigureAwait(false);
             }
 
+            Console.WriteLine($"Size of {value}: {stream.Length}");
+
             stream.Position = 0;
 
             using (var reader = new BinaryReader(stream, Encoding.UTF8, true))
@@ -93,6 +95,30 @@ namespace AppDomainAlternative.Serializer
                 Parent = this,
                 Str = "Hello World"
             }).ConfigureAwait(false);
+        }
+
+        [Test]
+        public async Task CustomSerializerWNonPublicCtorTest()
+        {
+            var resolver = new MockResolveProxyIds();
+            var serializer = new DefaultSerializer();
+            var stream = new MemoryStream();
+            var value = new ArgumentNullException(Guid.NewGuid().ToString());
+
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8, true))
+            {
+                await serializer.Serialize(writer, typeof(ArgumentNullException), value, resolver).ConfigureAwait(false);
+            }
+
+            Console.WriteLine($"Size of {value}: {stream.Length}");
+
+            stream.Position = 0;
+
+            using (var reader = new BinaryReader(stream, Encoding.UTF8, true))
+            {
+                var deserializedValue = (ArgumentNullException)await serializer.Deserialize(reader, typeof(ArgumentNullException), resolver, CancellationToken.None).ConfigureAwait(false);
+                Assert.AreEqual(deserializedValue.Message, value.Message);
+            }
         }
 
         [Test]

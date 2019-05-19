@@ -12,17 +12,10 @@ namespace AppDomainAlternative.Serializer.Default
     internal static class SerializableReaderWriter
     {
         private static ConstructorInfo getCtor(this Type type) =>
-            serializableConstructors.GetOrAdd(type, @class => @class
-                .GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
-                .Select(it => new
-                {
-                    ctor = it,
-                    @params = it.GetParameters()
-                })
-                .FirstOrDefault(it => it.@params.Length == 2 &&
-                                      it.@params[0].ParameterType == typeof(SerializationInfo) &&
-                                      it.@params[1].ParameterType == typeof(StreamingContext))
-                ?.ctor ?? throw new InvalidOperationException("Unable to find serialization constructor."));
+            serializableConstructors.GetOrAdd(type, @class =>
+                @class.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new [] { typeof(SerializationInfo), typeof(StreamingContext) }, null) ??
+                @class.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, new[] { typeof(SerializationInfo), typeof(StreamingContext) }, null) ??
+                throw new InvalidOperationException("Unable to find serialization constructor."));
         private static FieldInfo[] getFields(this Type type)
         {
             if (!serializableFields.TryGetValue(type, out var members))
