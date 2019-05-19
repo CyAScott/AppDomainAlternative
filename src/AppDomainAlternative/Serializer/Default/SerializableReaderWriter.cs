@@ -54,22 +54,25 @@ namespace AppDomainAlternative.Serializer.Default
         {
             type = type ?? reader.ReadType();
 
-            var context = new StreamingContext();
-            var info = resolver.createSerializationInfo(type);
-            var length = reader.ReadInt32();
+            var useCustomSerializer = reader.ReadBoolean();
 
-            for (var index = 0; index < length; index++)
+            if (useCustomSerializer)
             {
-                var itemName = reader.ReadString();
-                var itemType = reader.ReadType();
-                var item = await reader.ReadObject(resolver).ConfigureAwait(false);
+                var context = new StreamingContext();
+                var info = resolver.createSerializationInfo(type);
+                var length = reader.ReadInt32();
 
-                info.AddValue(itemName, item, itemType);
-            }
+                for (var index = 0; index < length; index++)
+                {
+                    var itemName = reader.ReadString();
+                    var itemType = reader.ReadType();
+                    var item = await reader.ReadObject(resolver).ConfigureAwait(false);
 
-            var ctor = type.getCtor();
-            if (ctor != null)
-            {
+                    info.AddValue(itemName, item, itemType);
+                }
+
+                var ctor = type.getCtor() ?? throw new InvalidOperationException("Unable to find serialization constructor.");
+
                 return ctor.Invoke(new object[]
                 {
                     info, context
@@ -80,7 +83,7 @@ namespace AppDomainAlternative.Serializer.Default
 
             foreach (var field in type.getFields())
             {
-                field.SetValue(returnValue, info.GetValue(field.Name, field.FieldType));
+                field.SetValue(returnValue, await reader.ReadObject(resolver).ConfigureAwait(false));
             }
 
             return returnValue;
@@ -93,45 +96,48 @@ namespace AppDomainAlternative.Serializer.Default
                 writer.Write(type, false);
             }
 
-            var start = writer.BaseStream.Position;
-            writer.Write(new byte[sizeof(int)], 0, sizeof(int));
-
-            var context = new StreamingContext();
-            var info = resolver.createSerializationInfo(type);
-
             if (value is ISerializable serializable)
             {
-                var ctor = type.getCtor();
-                if (ctor == null)
-                {
+                //true for custom serialization
+                writer.Write(true);
 
+                if (type.getCtor() == null)
+                {
+                    throw new InvalidOperationException("Unable to find serialization constructor.");
                 }
+
+                var context = new StreamingContext();
+                var info = resolver.createSerializationInfo(type);
                 serializable.GetObjectData(info, context);
+
+                var start = writer.BaseStream.Position;
+                writer.Write(new byte[sizeof(int)], 0, sizeof(int));
+
+                var length = 0;
+                foreach (var entry in info)
+                {
+                    length++;
+                    writer.Write(entry.Name);
+                    writer.Write(entry.ObjectType, false);
+                    writer.Write(entry.Value?.GetType() ?? entry.ObjectType, entry.Value, resolver);
+                }
+
+                var stop = writer.BaseStream.Position;
+                writer.BaseStream.Position = start;
+                writer.Write(length);
+                writer.BaseStream.Position = stop;
             }
             else
             {
+                //false for custom serialization
+                writer.Write(false);
+
                 foreach (var field in type.getFields())
                 {
-                    info.AddValue(field.Name, field.GetValue(value), field.FieldType);
+                    var fieldValue = field.GetValue(value);
+                    writer.Write(fieldValue?.GetType() ?? field.FieldType, fieldValue, resolver);
                 }
             }
-
-            var length = 0;
-            foreach (var entry in info)
-            {
-                length++;
-                writer.Write(entry.Name);
-                writer.Write(entry.ObjectType, false);
-                writer.Write(entry.Value?.GetType() ?? entry.ObjectType, entry.Value, resolver);
-            }
-
-            var stop = writer.BaseStream.Position;
-
-            writer.BaseStream.Position = start;
-
-            writer.Write(length);
-
-            writer.BaseStream.Position = stop;
         }
     }
 
