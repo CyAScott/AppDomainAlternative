@@ -46,7 +46,6 @@ namespace AppDomainAlternative.Serializer.Default
 
             return members;
         }
-        private static SerializationInfo createSerializationInfo(this IResolveProxyIds resolver, Type type) => new SerializationInfo(type, new FormatterConverter(resolver));
         private static readonly ConcurrentDictionary<Type, ConstructorInfo> serializableConstructors = new ConcurrentDictionary<Type, ConstructorInfo>();
         private static readonly ConcurrentDictionary<Type, FieldInfo[]> serializableFields = new ConcurrentDictionary<Type, FieldInfo[]>();
 
@@ -59,7 +58,7 @@ namespace AppDomainAlternative.Serializer.Default
             if (useCustomSerializer)
             {
                 var context = new StreamingContext();
-                var info = resolver.createSerializationInfo(type);
+                var info = new SerializationInfo(type, new DefaultFormatterConverter());
                 var length = reader.ReadInt32();
 
                 for (var index = 0; index < length; index++)
@@ -107,7 +106,7 @@ namespace AppDomainAlternative.Serializer.Default
                 }
 
                 var context = new StreamingContext();
-                var info = resolver.createSerializationInfo(type);
+                var info = new SerializationInfo(type, new DefaultFormatterConverter());
                 serializable.GetObjectData(info, context);
 
                 var start = writer.BaseStream.Position;
@@ -139,57 +138,5 @@ namespace AppDomainAlternative.Serializer.Default
                 }
             }
         }
-    }
-
-    internal class FormatterConverter : IFormatterConverter
-    {
-        DateTime IFormatterConverter.ToDateTime(object value) => converter.ToDateTime(value);
-        bool IFormatterConverter.ToBoolean(object value) => converter.ToBoolean(value);
-        byte IFormatterConverter.ToByte(object value) => converter.ToByte(value);
-        char IFormatterConverter.ToChar(object value) => converter.ToChar(value);
-        decimal IFormatterConverter.ToDecimal(object value) => converter.ToDecimal(value);
-        double IFormatterConverter.ToDouble(object value) => converter.ToDouble(value);
-        float IFormatterConverter.ToSingle(object value) => converter.ToSingle(value);
-        int IFormatterConverter.ToInt32(object value) => converter.ToInt32(value);
-        long IFormatterConverter.ToInt64(object value) => converter.ToInt64(value);
-        object IFormatterConverter.Convert(object value, Type type)
-        {
-            if (value is long ptr && resolver.TryToGetInstance(ptr, out var instance))
-            {
-                return instance;
-            }
-
-            if (value != null && resolver.TryToGetInstanceId(value, out ptr))
-            {
-                return ptr;
-            }
-
-            return converter.Convert(value, type);
-        }
-        object IFormatterConverter.Convert(object value, TypeCode typeCode)
-        {
-            if (value is long ptr && resolver.TryToGetInstance(ptr, out var instance))
-            {
-                return instance;
-            }
-
-            if (value != null && resolver.TryToGetInstanceId(value, out ptr))
-            {
-                return ptr;
-            }
-
-            return converter.Convert(value, typeCode);
-        }
-        sbyte IFormatterConverter.ToSByte(object value) => converter.ToSByte(value);
-        short IFormatterConverter.ToInt16(object value) => converter.ToInt16(value);
-        string IFormatterConverter.ToString(object value) => converter.ToString(value);
-        uint IFormatterConverter.ToUInt32(object value) => converter.ToUInt32(value);
-        ulong IFormatterConverter.ToUInt64(object value) => converter.ToUInt64(value);
-        ushort IFormatterConverter.ToUInt16(object value) => converter.ToUInt16(value);
-
-        private readonly IResolveProxyIds resolver;
-        private static readonly IFormatterConverter converter = new DefaultFormatterConverter();
-
-        public FormatterConverter(IResolveProxyIds resolver) => this.resolver = resolver;
     }
 }
