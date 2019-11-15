@@ -12,6 +12,83 @@ namespace AppDomainAlternative.Extensions
 {
     internal static class ChannelStartExtensions
     {
+        private static async Task<object> localStart(this IInternalChannel channel, CancellationTokenSource cancel, IGenerateProxies proxyGenerator, ConstructorInfo ctor, bool hostInstance, object instance, params object[] arguments)
+        {
+            if (channel == null)
+            {
+                throw new ArgumentNullException(nameof(channel));
+            }
+
+            if (cancel == null)
+            {
+                throw new ArgumentNullException(nameof(cancel));
+            }
+
+            if (ctor == null)
+            {
+                throw new ArgumentNullException(nameof(ctor));
+            }
+
+            if (arguments == null)
+            {
+                throw new ArgumentNullException(nameof(arguments));
+            }
+
+            if (!(proxyGenerator == null ^ instance == null))
+            {
+                throw new InvalidOperationException($"Only one instance of {nameof(proxyGenerator)} or {nameof(instance)} is allowed.");
+            }
+
+            if (instance != null && !hostInstance)
+            {
+                throw new InvalidOperationException("Instance must be hosted.");
+            }
+
+            var response = new byte[] { 1 };
+            var responseTask = channel.Buffer.ReadAsync(response, 0, 1);
+
+            var initRequest = new MemoryStream();
+            using (var writer = new BinaryWriter(initRequest, Encoding.UTF8, true))
+            {
+                //write hostInstance
+                writer.Write(hostInstance);
+
+                //write type to proxy
+                await channel.Serializer.Serialize(writer, typeof(Type), ctor.DeclaringType, channel.Connection).ConfigureAwait(false);
+
+                //write ctor param count
+                var @params = ctor.GetParameters();
+                writer.Write((byte)@params.Length);
+
+                if (arguments.Length != @params.Length)
+                {
+                    throw new ArgumentException("Invalid constructor.");
+                }
+
+                //write each ctor param in pairs of type and value
+                foreach (var param in @params.Zip(arguments, (param, arg) => new { type = arg?.GetType() ?? param.ParameterType, arg }))
+                {
+                    await channel.Serializer.Serialize(writer, typeof(Type), param.type, channel.Connection).ConfigureAwait(false);
+                    await channel.Serializer.Serialize(writer, param.type, param.arg, channel.Connection).ConfigureAwait(false);
+                }
+            }
+
+            initRequest.Position = 0;
+            channel.Connection.Write(channel.Id, initRequest);
+
+            await responseTask.ConfigureAwait(false);
+
+            if (response[0] != 0)
+            {
+                return hostInstance ? instance ?? ctor.Invoke(arguments) : proxyGenerator.GenerateProxy(channel, ctor, arguments);
+            }
+
+            var exceptionType = (Type)await channel.Serializer.Deserialize(channel.Reader, typeof(Type), channel.Connection, cancel.Token).ConfigureAwait(false);
+            var exception = (Exception)await channel.Serializer.Deserialize(channel.Reader, exceptionType, channel.Connection, cancel.Token).ConfigureAwait(false);
+
+            throw exception;
+        }
+
         public static async Task<(bool isHost, object instance)> RemoteStart(this IInternalChannel channel, CancellationTokenSource cancel, IGenerateProxies proxyGenerator)
         {
             if (channel == null)
@@ -109,76 +186,17 @@ namespace AppDomainAlternative.Extensions
 
             return (isHost, instance);
         }
-        public static async Task<object> LocalStart(this IInternalChannel channel, CancellationTokenSource cancel, IGenerateProxies proxyGenerator, ConstructorInfo ctor, bool hostInstance, params object[] arguments)
+        public static Task<object> LocalStart(this IInternalChannel channel, CancellationTokenSource cancel, IGenerateProxies proxyGenerator, ConstructorInfo ctor, bool hostInstance, params object[] arguments) =>
+            channel.localStart(cancel, proxyGenerator, ctor, hostInstance, null, arguments);
+        public static Task LocalStart<T>(this IInternalChannel channel, CancellationTokenSource cancel, T instance)
+            where T : class, new()
         {
-            if (channel == null)
+            if (instance == null)
             {
-                throw new ArgumentNullException(nameof(channel));
+                throw new ArgumentNullException(nameof(instance));
             }
 
-            if (cancel == null)
-            {
-                throw new ArgumentNullException(nameof(cancel));
-            }
-
-            if (ctor == null)
-            {
-                throw new ArgumentNullException(nameof(ctor));
-            }
-
-            if (arguments == null)
-            {
-                throw new ArgumentNullException(nameof(arguments));
-            }
-
-            if (proxyGenerator == null)
-            {
-                throw new ArgumentNullException(nameof(proxyGenerator));
-            }
-
-            var response = new byte[] { 1 };
-            var responseTask = channel.Buffer.ReadAsync(response, 0, 1);
-
-            var initRequest = new MemoryStream();
-            using (var writer = new BinaryWriter(initRequest, Encoding.UTF8, true))
-            {
-                //write hostInstance
-                writer.Write(hostInstance);
-
-                //write type to proxy
-                await channel.Serializer.Serialize(writer, typeof(Type), ctor.DeclaringType, channel.Connection).ConfigureAwait(false);
-
-                //write ctor param count
-                var @params = ctor.GetParameters();
-                writer.Write((byte)@params.Length);
-
-                if (arguments.Length != @params.Length)
-                {
-                    throw new ArgumentException("Invalid constructor.");
-                }
-
-                //write each ctor param in pairs of type and value
-                foreach (var param in @params.Zip(arguments, (param, arg) => new { type = arg?.GetType() ?? param.ParameterType, arg }))
-                {
-                    await channel.Serializer.Serialize(writer, typeof(Type), param.type, channel.Connection).ConfigureAwait(false);
-                    await channel.Serializer.Serialize(writer, param.type, param.arg, channel.Connection).ConfigureAwait(false);
-                }
-            }
-
-            initRequest.Position = 0;
-            channel.Connection.Write(channel.Id, initRequest);
-
-            await responseTask.ConfigureAwait(false);
-
-            if (response[0] != 0)
-            {
-                return hostInstance ? ctor.Invoke(arguments) : proxyGenerator.GenerateProxy(channel, ctor, arguments);
-            }
-
-            var exceptionType = (Type)await channel.Serializer.Deserialize(channel.Reader, typeof(Type), channel.Connection, cancel.Token).ConfigureAwait(false);
-            var exception = (Exception)await channel.Serializer.Deserialize(channel.Reader, exceptionType, channel.Connection, cancel.Token).ConfigureAwait(false);
-
-            throw exception;
+            return channel.localStart(cancel, null, typeof(T).GetConstructor(Type.EmptyTypes), true, instance);
         }
     }
 }

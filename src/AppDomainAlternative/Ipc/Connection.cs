@@ -442,6 +442,35 @@ namespace AppDomainAlternative.Ipc
                 throw;
             }
         }
+        public async Task HostInstance<T>(T instance)
+            where T : class, new()
+        {
+            if (instance == null)
+            {
+                throw new ArgumentNullException(nameof(instance));
+            }
+
+            var channel = createChannel();
+
+            try
+            {
+                await channel.LocalStart(instance).ConfigureAwait(false);
+
+                try
+                {
+                    NewChannel?.Invoke(domain, channel);
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+            catch
+            {
+                channel.Dispose();
+                throw;
+            }
+        }
         public event Action<Domains, IChannel> NewChannel;
         public override string ToString() => isParent ? "Parent Connection" : "Child Connection";
         public void Dispose()
@@ -511,6 +540,13 @@ namespace AppDomainAlternative.Ipc
         /// <param name="hostInstance">If true, the object instance should exist within this process and all method calls from the child/parent process are proxied to this process.</param>
         /// <param name="arguments">The constructor arguments.</param>
         Task<object> CreateInstance(ConstructorInfo baseCtor, bool hostInstance, params object[] arguments);
+
+        /// <summary>
+        /// Host a proxy instance that has a default constructor.
+        /// </summary>
+        /// <param name="instance">The object instance to host.</param>
+        Task HostInstance<T>(T instance)
+            where T : class, new();
 
         /// <summary>
         /// Is invoked when a new <see cref="IChannel"/> is opened.

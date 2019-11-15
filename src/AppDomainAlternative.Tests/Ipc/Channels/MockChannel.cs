@@ -32,6 +32,8 @@ namespace AppDomainAlternative.Ipc.Channels
         public Task<T> RemoteInvoke<T>(bool fireAndForget, string methodName, params Tuple<Type, object>[] args) =>
             this.RemoteInvoke<T>(RemoteRequests, () => Interlocked.Increment(ref RequestCounter), fireAndForget, methodName, args);
         public Task LocalStart(IGenerateProxies proxyGenerator, ConstructorInfo ctor, bool hostInstance, params object[] arguments) => throw new NotSupportedException();
+        public Task LocalStart<T>(T instance)
+            where T : class, new() => throw new NotSupportedException();
         public Task RemoteStart(IGenerateProxies proxyGenerator) => throw new NotSupportedException();
         public bool IsDisposed { get; } = false;
         public bool IsHost { get; set; }

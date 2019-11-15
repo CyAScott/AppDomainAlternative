@@ -42,6 +42,13 @@ namespace AppDomainAlternative.Ipc
                 Connection.Write(Id, new MemoryStream(InitBytes.ToByteArray(), false));
                 return Task.CompletedTask;
             }
+            public Task LocalStart<T>(T instance)
+                where T : class, new()
+            {
+                IsHost = true;
+                Connection.Write(Id, new MemoryStream(InitBytes.ToByteArray(), false));
+                return Task.CompletedTask;
+            }
             public Task RemoteStart(IGenerateProxies proxyGenerator)
             {
                 IsHost = false;

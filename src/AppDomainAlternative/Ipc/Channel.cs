@@ -41,6 +41,8 @@ namespace AppDomainAlternative.Ipc
         IConnection Connection { get; }
         ReadWriteBuffer Buffer { get; }
         Task LocalStart(IGenerateProxies proxyGenerator, ConstructorInfo ctor, bool hostInstance, params object[] arguments);
+        Task LocalStart<T>(T instance)
+            where T : class, new();
         Task RemoteStart(IGenerateProxies proxyGenerator);
         bool IsDisposed { get; }
     }
@@ -84,6 +86,13 @@ namespace AppDomainAlternative.Ipc
             Instance = await this.LocalStart(disposeToken, proxyGenerator, ctor, hostInstance, arguments).ConfigureAwait(false);
 
             IsHost = hostInstance;
+
+            this.StartListening(disposeToken, remoteRequests);
+        }
+        public async Task LocalStart<T>(T instance)
+            where T : class, new()
+        {
+            await this.LocalStart(disposeToken, instance).ConfigureAwait(false);
 
             this.StartListening(disposeToken, remoteRequests);
         }
