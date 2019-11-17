@@ -92,7 +92,9 @@ namespace AppDomainAlternative.Ipc
         public async Task LocalStart<T>(T instance)
             where T : class, new()
         {
-            await this.LocalStart(disposeToken, instance).ConfigureAwait(false);
+            await this.LocalStart(disposeToken, Instance = instance).ConfigureAwait(false);
+
+            IsHost = true;
 
             this.StartListening(disposeToken, remoteRequests);
         }

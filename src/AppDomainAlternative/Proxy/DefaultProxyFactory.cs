@@ -51,7 +51,7 @@ namespace AppDomainAlternative.Proxy
                 .Where(methodInfo => methodInfo.DeclaringType != typeof(object) && methodInfo.IsVirtual && !methodInfo.IsGenericMethod)
                 .Count(methodInfo => tryToOverrideMethod(settings, interceptor, typeBuilder, interceptorField, methodInfo)) == 0)
             {
-                throw new ArgumentException("Unable to proxy any member for this type.");
+                throw new ArgumentException($"Unable to proxy any member for this type: {baseType.FullName}");
             }
 
             return typeBuilder.CreateTypeInfo().GetConstructors().Single();

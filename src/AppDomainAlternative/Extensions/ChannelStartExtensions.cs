@@ -196,7 +196,7 @@ namespace AppDomainAlternative.Extensions
                 throw new ArgumentNullException(nameof(instance));
             }
 
-            return channel.localStart(cancel, null, typeof(T).GetConstructor(Type.EmptyTypes), true, instance);
+            return channel.localStart(cancel, null, instance.GetType().GetConstructor(Type.EmptyTypes), true, instance);
         }
     }
 }
