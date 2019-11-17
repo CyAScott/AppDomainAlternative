@@ -145,7 +145,7 @@ namespace AppDomainAlternative.Serializer.Default
                 return;
             }
 
-            if (valueType == typeof(Type))
+            if (typeof(Type).IsAssignableFrom(valueType))
             {
                 writer.Write((Type)value);
                 return;

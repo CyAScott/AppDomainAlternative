@@ -178,7 +178,7 @@ namespace AppDomainAlternative.Serializer.Default
             {
                 writer.Write((byte)ObjectType.Type);
             }
-            if (map.TryGetValue(type, out var shortType))
+            if (map.TryGetValue(typeof(Type).IsAssignableFrom(type) ? typeof(Type) : type, out var shortType))
             {
                 writer.Write((byte)shortType);
             }
