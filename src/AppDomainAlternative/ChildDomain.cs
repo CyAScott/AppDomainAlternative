@@ -8,12 +8,24 @@ namespace AppDomainAlternative
     /// <inheritdoc cref="Domains"/>
     public sealed class ChildDomain : Domains, IDisposable
     {
+        private readonly bool debuggerEnabled;
+        private readonly int pid;
         private int disposed;
 
-        internal ChildDomain(Process childProcess, Connection connection)
+        internal ChildDomain(Process childProcess, bool debuggerEnabled, Connection connection)
         {
             Channels = connection;
             Process = childProcess;
+            this.debuggerEnabled = debuggerEnabled;
+
+            try
+            {
+                pid = childProcess.Id;
+            }
+            catch
+            {
+                pid = -1;
+            }
 
             childProcess.Exited += (sender, eventArgs) => Dispose();
         }
@@ -32,6 +44,11 @@ namespace AppDomainAlternative
             if (Interlocked.CompareExchange(ref disposed, 1, 0) != 0)
             {
                 return;
+            }
+
+            if (debuggerEnabled && pid != -1)
+            {
+                DetachDebugger(pid);
             }
 
             using ((IDisposable)Channels)

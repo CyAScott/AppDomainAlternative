@@ -9,6 +9,13 @@ namespace ClientApp
     {
         public static async Task Main()
         {
+            if (Domains.Current.Channels == null)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Host not found!");
+                return;
+            }
+
             const bool host = false;
 
             var chatRoomInstanceInfo = await Domains.Current.Channels.GetInstanceOf<ChatRoom>(filter: (isHost, instance) => isHost == host).ConfigureAwait(false);

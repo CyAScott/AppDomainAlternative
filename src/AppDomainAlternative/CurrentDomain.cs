@@ -42,17 +42,25 @@ namespace AppDomainAlternative
 
             var parent = Process.GetProcessById(Convert.ToInt32(parentConnectionString.Groups["pid"].Value));
 
+            parent.EnableRaisingEvents = true;
+            parent.Exited += (sender, eventArgs) => Environment.Exit(0);
+
             var serializerName = HttpUtility.HtmlDecode(parentConnectionString.Groups["serializer"].Value);
             var proxyGeneratorName = HttpUtility.HtmlDecode(parentConnectionString.Groups["proxyGenerator"].Value);
+
+            var reader = new AnonymousPipeClientStream(PipeDirection.In, parentConnectionString.Groups["read"].Value);
+
+            if (parentConnectionString.Groups["debug"].Value == "1")
+            {
+                //wait for a signal from the parent process to proceed
+                reader.Read(new byte[1], 0, 1);
+            }
 
             Channels = new Connection(this,
                 DomainConfiguration.SerializerResolver(serializerName) ?? throw new InvalidOperationException($"Invalid serializer from parent: {serializerName}"),
                 DomainConfiguration.Resolver(proxyGeneratorName) ?? throw new InvalidOperationException($"Invalid proxy generator from parent: {proxyGeneratorName}"),
-                new AnonymousPipeClientStream(PipeDirection.In, parentConnectionString.Groups["read"].Value),
+                reader,
                 new AnonymousPipeClientStream(PipeDirection.Out, parentConnectionString.Groups["write"].Value));
-
-            parent.EnableRaisingEvents = true;
-            parent.Exited += (sender, eventArgs) => Environment.Exit(0);
         }
 
         /// <summary>
@@ -79,13 +87,15 @@ namespace AppDomainAlternative
             proxyGenerator = proxyGenerator ?? DefaultProxyFactory.Instance;
             serializer = serializer ?? DefaultSerializer.Instance;
 
+            var debuggerEnabled = Debugger.IsAttached && DebuggingSupported;
+
             var read = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable);
             var write = new AnonymousPipeServerStream(PipeDirection.In, HandleInheritability.Inheritable);
             startInfo.Environment[connectionStringVarName] =
                 $"pid={Current.Process.Id}&" +
                 $"write={write.GetClientHandleAsString()}&" +
                 $"read={read.GetClientHandleAsString()}&" +
-                $"debug={(Debugger.IsAttached ? 1 : 0)}&" +
+                $"debug={(debuggerEnabled ? 1 : 0)}&" +
                 $"serializer={HttpUtility.UrlEncode(serializer.Name)}&" +
                 $"proxyGenerator={HttpUtility.UrlEncode(proxyGenerator.Name)}";
             startInfo.UseShellExecute = false;
@@ -97,16 +107,28 @@ namespace AppDomainAlternative
             read.DisposeLocalCopyOfClientHandle();
             write.DisposeLocalCopyOfClientHandle();
 
+            if (debuggerEnabled)
+            {
+                if (!TryToAttachDebugger(childProcess.Id))
+                {
+                    debuggerEnabled = false;
+                }
+
+                //signal to the child process to continue now that the debugger is attached
+                read.Write(new byte[1], 0, 1);
+                read.WaitForPipeDrain();
+            }
+
             //NOTE: the read and write streams are switched for the server side
-            var child = new ChildDomain(childProcess, new Connection(this, serializer, proxyGenerator, write, read));
+            var child = new ChildDomain(childProcess, debuggerEnabled, new Connection(this, serializer, proxyGenerator, write, read));
 
             children[childProcess.Id] = child;
 
-            child.Process.Exited += (sender, eventArgs) => children.TryRemove(Process.Id, out _);
+            child.Process.Exited += (sender, eventArgs) => children.TryRemove(childProcess.Id, out _);
 
             if (child.Process.HasExited)
             {
-                children.TryRemove(Process.Id, out _);
+                children.TryRemove(childProcess.Id, out _);
             }
 
             return child;

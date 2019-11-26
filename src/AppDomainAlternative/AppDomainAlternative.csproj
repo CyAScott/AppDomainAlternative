@@ -4,15 +4,46 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>bin\Debug\netstandard2.0\AppDomainAlternative.xml</DocumentationFile>
-  </PropertyGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Content Include="$(SolutionDir)\VsDebugger\bin\Debug\*.*">
+      <CopyToOutput>true</CopyToOutput>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DocumentationFile>bin\Release\netstandard2.0\AppDomainAlternative.xml</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\AppDomainAlternative\bin\Release\AppDomainAlternative.xml</DocumentationFile>
+    <IsPackable>true</IsPackable>
+    <PackageId>AppDomainAlternative</PackageId>
+    <PackageVersion>$(Version)</PackageVersion>
+    <Title>An AppDomain alternative for .Net Core</Title>
+    <Authors>Cy A Scott</Authors>
+    <PackageProjectUrl>https://github.com/CyAScott/AppDomainAlternative</PackageProjectUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageTags>Core AppDomain</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Content Include="$(SolutionDir)\VsDebugger\bin\Release\*.*">
+      <Pack>true</Pack>
+      <PackagePath>lib\netstandard2.0</PackagePath>
+      <CopyToOutput>true</CopyToOutput>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="C:\Git\AppDomainAlternative\src\VsDebugger\bin\Release\EnvDTE.dll" />
+    <Content Remove="C:\Git\AppDomainAlternative\src\VsDebugger\bin\Release\EnvDTE80.dll" />
+    <Content Remove="C:\Git\AppDomainAlternative\src\VsDebugger\bin\Release\stdole.dll" />
+    <Content Remove="C:\Git\AppDomainAlternative\src\VsDebugger\bin\Release\VsDebugger.exe" />
+    <Content Remove="C:\Git\AppDomainAlternative\src\VsDebugger\bin\Release\VsDebugger.exe.config" />
+    <Content Remove="C:\Git\AppDomainAlternative\src\VsDebugger\bin\Release\VsDebugger.pdb" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
