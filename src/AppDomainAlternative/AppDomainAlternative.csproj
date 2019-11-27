@@ -37,12 +37,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Remove="C:\Git\AppDomainAlternative\src\VsDebugger\bin\Release\EnvDTE.dll" />
-    <Content Remove="C:\Git\AppDomainAlternative\src\VsDebugger\bin\Release\EnvDTE80.dll" />
-    <Content Remove="C:\Git\AppDomainAlternative\src\VsDebugger\bin\Release\stdole.dll" />
-    <Content Remove="C:\Git\AppDomainAlternative\src\VsDebugger\bin\Release\VsDebugger.exe" />
-    <Content Remove="C:\Git\AppDomainAlternative\src\VsDebugger\bin\Release\VsDebugger.exe.config" />
-    <Content Remove="C:\Git\AppDomainAlternative\src\VsDebugger\bin\Release\VsDebugger.pdb" />
+    <Content Remove="$(SolutionDir)\VsDebugger\bin\Release\EnvDTE.dll" />
+    <Content Remove="$(SolutionDir)\VsDebugger\bin\Release\EnvDTE80.dll" />
+    <Content Remove="$(SolutionDir)\VsDebugger\bin\Release\stdole.dll" />
+    <Content Remove="$(SolutionDir)\VsDebugger\bin\Release\VsDebugger.exe" />
+    <Content Remove="$(SolutionDir)\VsDebugger\bin\Release\VsDebugger.exe.config" />
+    <Content Remove="$(SolutionDir)\VsDebugger\bin\Release\VsDebugger.pdb" />
   </ItemGroup>
 
   <ItemGroup>
