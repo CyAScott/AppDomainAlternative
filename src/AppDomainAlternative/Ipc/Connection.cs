@@ -308,14 +308,12 @@ namespace AppDomainAlternative.Ipc
                                         }
                                         writer.Write(request.id);
                                         writer.Write(0);
-                                        (writer.BaseStream as PipeStream)?.WaitForPipeDrain();
                                     }
                                     else if (channels.TryGetValue(request.id, out var channel) && !channel.IsDisposed)
                                     {
                                         writer.Write(request.id);
                                         writer.Write((int)request.data.Length);
                                         await request.data.CopyToAsync(writer.BaseStream).ConfigureAwait(false);
-                                        (writer.BaseStream as PipeStream)?.WaitForPipeDrain();
                                     }
                                 }
                                 catch

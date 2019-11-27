@@ -116,7 +116,6 @@ namespace AppDomainAlternative
 
                 //signal to the child process to continue now that the debugger is attached
                 read.Write(new byte[1], 0, 1);
-                read.WaitForPipeDrain();
             }
 
             //NOTE: the read and write streams are switched for the server side
